@@ -3,46 +3,37 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const app = express();
+const db = require('./db/db.json');
 const PORT = process.env.PORT || 3008;
-const entireNotes = require('./db/db.json');
 
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+
+//static routes for application
 app.use(express.static('public'));
 
+// routes to index on startup 
 app.get('/', (req,res)=>
-    res.sendFile(path.join(__dirname, './public/index.html'))
+    res.sendFile(path.join(__dirname, '/public/index.html'))
 );
 
+// get request to notes html
 app.get('/notes', (req,res)=>{
-    res.sendFile(path.join(__dirname,'public/notes.html'))
+    res.sendFile(path.join(__dirname,'/public/notes.html'))
 });
 
+//fallback for everything else to go to index.
 app.get('*', (req,res)=>{
-    res.sendFile(path.join(__dirname,'./public.index.html'))
+    res.sendFile(path.join(__dirname,'/public.index.html'))
 });
-
-function createNote(body, notesArray){
-    const newNote = body;
-    if (!Array.isArray(notesArray))
-        notesArray = [];
-    if (notesArray.length===0)
-        notesArray.push(0);
-    body.id=notesArray[0];
-    notesArray[0]++;
-    notesArray.push(newNote);
-    fs.writeFile(
-        path.join(__dirname,'./db/db.json'),
-        JSON.stringify(notesArray,null,2)
-    );
-    return newNote;
-}
 // WHEN I click on the link to the notes page
 // THEN I am presented with a page with existing notes listed in the left-hand column, plus empty fields to enter a new note title and the note’s text in the right-hand column
 
-// Referred to lessons when writing this out 
-app.post('./api/notes.html', (req,res) =>{
+// Referred to lessons (lesson 19 in express section of the course) when writing this out
+// post request for the notes page that sends a request and response 
+app.post('./notes.html', (req,res) =>{
     const { text, title } = req.body;
+    //evaluates title and body if it already exists in database. in this case it will create a new note if it does not match.
     if (text && title){
         const newNote = {
             text,
@@ -50,20 +41,21 @@ app.post('./api/notes.html', (req,res) =>{
         };
 
         //reads files and converts data to string so we can save it
-        const noteString = JSON.stringify(newNote);
         fs.readFile('./db/db.json', 'utf8', (err,data)=>{
             if (err){
                 console.log(err);
             }else{
-                const parsedNotes=JSON.parse(data)
+                //converts string into json object 
+                const parsedNotes=JSON.parse(data);
+                //Adds new review
                 parsedNotes.push(newNote);
             }
         })
 
-        //Writes string to file
+        //Writes string to file if error is true, returns error. false tells user the note is made
         fs.writeFile('./db/db.json', JSON.stringify(parsedNotes,null,4), (err)=>
             err
-                ? console.log(err):console.log(`New note for ${newNote.title} has been written to JSON.`)
+            ? console.log(err):console.log(`New note for ${newNote.title} has been written to JSON.`)
         )
         const response = {
             status: 'success',
@@ -75,17 +67,6 @@ app.post('./api/notes.html', (req,res) =>{
         res.status(500).json('Uh oh... there was an error');
     }
 });
-// WHEN I enter a new note title and the note’s text
-// THEN a Save icon appears in the navigation at the top of the page
-
-// WHEN I click on the Save icon
-// THEN the new note I have entered is saved and appears in the left-hand column with the other existing notes
-
-// WHEN I click on an existing note in the list in the left-hand column
-// THEN that note appears in the right-hand column
-
-// WHEN I click on the Write icon in the navigation at the top of the page
-// THEN I am presented with empty fields to enter a new note title and the note’s text in the right-hand column
 
 // Adding this for testing purposes
 app.listen(PORT, () =>
