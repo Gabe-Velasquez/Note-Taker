@@ -43,7 +43,7 @@ app.post('/api/notes', (req,res) => {
             text,
             title
         };
-
+        db.push(newNote);
         //reads files and converts data to string so we can save it
         fs.readFile('./db/db.json', 'utf8', (err,data)=>{
             if (err){
@@ -70,8 +70,6 @@ app.post('/api/notes', (req,res) => {
             }
         });
 }});
-
-
 
 // Adding this for testing purposes
 app.listen(PORT, () =>
