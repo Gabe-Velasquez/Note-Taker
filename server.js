@@ -4,11 +4,11 @@ const fs = require('fs');
 const path = require('path');
 const app = express();
 const db = require('./db/db.json');
+const dbPath = path.join(__dirname,'./db/db.json');
 const PORT = process.env.PORT || 3008;
 
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
-
 //static routes for application
 app.use(express.static('public'));
 
@@ -21,55 +21,62 @@ app.get('/notes', (req,res) => {
     res.sendFile(path.join(__dirname,'/public/notes.html'))
 });
 
-
 app.get('/api/notes', (req,res)=>{
-    res.json(db)
+    return res.json(db);
 });
 
-//fallback for everything else to go to index.
-// app.get('*', (req,res)=>{
-//     res.sendFile(path.join(__dirname,'/public/index.html'))
+// app.get('/api/notes/:id', (req,res)=>{
+//     res.json(json.parse(data)[req.params.id]);
 // });
-// WHEN I click on the link to the notes page
-// THEN I am presented with a page with existing notes listed in the left-hand column, plus empty fields to enter a new note title and the note’s text in the right-hand column
+
+//fallback for everything else to go to index.
+app.get('*', (req,res)=>{
+    res.sendFile(path.join(__dirname,'/public/index.html'))
+});
 
 // Referred to lessons (lesson 19 in express section of the course) when writing this out
 // post request for the notes page that sends a request and response 
 app.post('/api/notes', (req,res) => {
-    const { text, title } = req.body;
-    //evaluates title and body if it already exists in database. in this case it will create a new note if it does not match.
-    if (text && title){
-        const newNote = {
-            text,
-            title
-        };
-        db.push(newNote);
-        //reads files and converts data to string so we can save it
-        fs.readFile('./db/db.json', 'utf8', (err,data)=>{
-            if (err){
-                console.log(err);
-            }else{
-                //converts string into json object 
-                const parsedNotes=JSON.parse(data);
-                //Adds new review
-                parsedNotes.push(newNote);
-                 //Writes string to file if error is true, returns error. false tells user the note is made
-                fs.writeFile('./db/db.json', JSON.stringify(parsedNotes,null,4), (err)=>{
-                    if (err) {
-                        console.log(err);
-                        res.sendStatus(500);
-                      } else {
-                        const response = {
-                          status: "success",
-                          body: newNote,
-                        };
-                        console.log(response);
-                        res.status(201).json(response);
-                        }
-                });
-            }
-        });
-}});
+    let newNotes = req.body;
+    let lastID = 0;
+    //for loop that loops through our database and creating an entry 
+    for (let i = 0; i < db; i++) {
+        let noteID = db[i];
+
+        if (noteID.id > lastID) {
+            lastID = noteID.id;
+        }
+    }
+    // Once an entry is created, we add 1 from the last entry to make it unique. After, we push to the database with our new information
+    newNotes.id = lastID + 1;
+    db.push(newNotes);
+    // Writes to db if the error is false. If it is true it will return the error 
+    fs.writeFile(dbPath, JSON.stringify(db), function (err) {
+        if (err) {
+            return console.log(err);
+        } else {
+            console.log('We saved your note!');
+        }
+    });
+    res.json(newNotes);   
+});
+
+// Delete request from user to get something off database. referring to mini project of that week to help build this. did not have helpers folder so had to figure out. built another for loop and removes array item. 
+app.delete('/api/notes/:id', (req,res)=>{
+   for (let i=0; i < db.length; i++){
+    if (db[i].id == req.params.id){
+        db.splice(i,1);
+    }}
+    // writes a file to database 
+    fs.writeFile(dbPath,JSON.stringify(db), function (err){
+        if (err){
+            return console.log(err);
+        }else{
+            console.log('Deleted your note!');
+        }
+    });
+    res.json(db);
+   });
 
 // Adding this for testing purposes
 app.listen(PORT, () =>
