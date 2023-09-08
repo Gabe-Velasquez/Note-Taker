@@ -25,7 +25,7 @@
   This project is using the MIT license. To learn more, please click the license link listed above.
 
   ## Contribution <a name='contribution'></a>
-  I watched this video to get a better understanding of delete and post methods  https://www.youtube.com/watch?v=XLsq6-biy5I. I also read documentation on mdn for http methods as well.
+  I watched this video to get a better understanding of delete and post methods  https://www.youtube.com/watch?v=XLsq6-biy5I. I also read documentation on mdn for http methods as well. Starter code was provided. 
 
   ## Tests <a name='tests'></a>
   No tests 
