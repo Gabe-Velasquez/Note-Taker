@@ -1,6 +1,7 @@
 //importing modules/files into project
 const express = require('express');
 const fs = require('fs');
+const { v4: uuid4 } = require('uuid'); 
 const path = require('path');
 const app = express();
 const db = require('./db/db.json');
@@ -35,47 +36,36 @@ app.get('*', (req,res)=>{
 });
 
 // Referred to lessons (lesson 19 in express section of the course) when writing this out
-// post request for the notes page that sends a request and response 
-app.post('/api/notes', (req,res) => {
-    let newNotes = req.body;
-    let lastID = 0;
-    //for loop that loops through our database and creating an entry 
-    for (let i = 0; i < db; i++) {
-        let noteID = db[i];
 
-        if (noteID.id > lastID) {
-            lastID = noteID.id;
+app.post('/api/notes', (req,res) => {
+    const noteNew = {...req.body, id: uuid4()};
+    db.push(noteNew);
+
+    fs.writeFile(dbPath, JSON.stringify(db, null, 2),
+    (error)=>{
+        if (error){
+            return res.json({error: 'There was an error writing your note'});
         }
-    }
-    // Once an entry is created, we add 1 from the last entry to make it unique. After, we push to the database with our new information
-    newNotes.id = lastID + 1;
-    db.push(newNotes);
-    // Writes to db if the error is false. If it is true it will return the error 
-    fs.writeFile(dbPath, JSON.stringify(db), function (err) {
-        if (err) {
-            return console.log(err);
-        } else {
-            console.log('We saved your note!');
-        }
+        return res.json(noteNew);
     });
-    res.json(newNotes);   
 });
 
 // Delete request from user to get something off database. referring to mini project of that week to help build this. did not have helpers folder so had to figure out. built another for loop and removes array item. 
 app.delete('/api/notes/:id', (req,res)=>{
-   for (let i=0; i < db.length; i++){
-    if (db[i].id == req.params.id){
-        db.splice(i,1);
-    }}
-    // writes a file to database 
-    fs.writeFile(dbPath,JSON.stringify(db), function (err){
-        if (err){
-            return console.log(err);
-        }else{
-            console.log('Deleted your note!');
-        }
+    //reads file for our notes, sees if there is an error and if its true returns error. 
+    fs.readFile(dbPath, (err,data)=>{
+        if (err) throw err;
+        let notes = JSON.parse(data);
+        const updateNotes = notes.filter(({id})=> id !== req.params.id);
+        fs.writeFile(dbPath, JSON.stringify(updateNotes,
+            (err)=>{
+              if (err){
+                return res.json({error: 'Error writing your note'});
+              }  
+              return res.json(updateNotes);
+            })
+        )
     });
-    res.json(db);
    });
 
 // Adding this for testing purposes
